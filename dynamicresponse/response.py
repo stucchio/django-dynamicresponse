@@ -16,14 +16,17 @@ class DynamicResponse(object):
     """
     Base class for dynamic responses.
     """
-    
-    def __init__(self, context={}, **kwargs):
+
+    def __init__(self, context={}, status=None, **kwargs):
 
         self.context = context
-        self.status = context.get('status', CR_OK)
+        if status is None: #Status argument can override context
+            self.status = context.get('status', CR_OK)
+        else:
+            self.status = status
         for arg in kwargs:
-            setattr(self, arg, kwargs[arg]) 
-    
+            setattr(self, arg, kwargs[arg])
+
     def serialize(self):
         """
         Serializes the context as JSON, or returns a HTTP response with corresponding status.
@@ -34,12 +37,12 @@ class DynamicResponse(object):
             return JsonResponse(self.context)
         else:
             return HttpResponse(status=status_code)
-        
+
     def full_context(self):
         """
         Returns context and extra context combined into a single dictionary.
         """
-        
+
         full_context = {}
         full_context.update(self.context)
         if hasattr(self, 'extra'):
@@ -53,12 +56,12 @@ class SerializeOrRender(DynamicResponse):
     """
 
     def __init__(self, template, context={}, **kwargs):
-        
+
         super(SerializeOrRender, self).__init__(context, **kwargs)
         self.template = template
-        
+
     def render_response(self, request, response):
-            
+
         if request.is_api:
             res = self.serialize()
         else:
@@ -67,9 +70,9 @@ class SerializeOrRender(DynamicResponse):
         if hasattr(self, 'extra_headers'):
             for header in self.extra_headers:
                 res[header] = self.extra_headers[header]
-        
+
         return res
-        
+
 class SerializeOrRedirect(DynamicResponse):
     """
     For normal requests, the user is redirected to the specified location.
@@ -82,7 +85,7 @@ class SerializeOrRedirect(DynamicResponse):
         self.url = url
 
     def render_response(self, request, response):
-        
+
         if request.is_api:
             res = self.serialize()
         else:
@@ -99,7 +102,7 @@ class Serialize(DynamicResponse):
     Serializes the context as JSON for both API and normal requests.
     Useful for AJAX-only type views.
     """
-    
+
     def __init__(self, context={}, **kwargs):
 
         super(Serialize, self).__init__(context, **kwargs)
@@ -107,9 +110,17 @@ class Serialize(DynamicResponse):
     def render_response(self, request, response):
 
         res = self.serialize()
-        
+
         if hasattr(self, 'extra_headers'):
             for header in self.extra_headers:
                 res[header] = self.extra_headers[header]
-        
+
         return res
+
+class SerializeObject(Serialize):
+    """
+    Serializes a single object as JSON for both API and normal requests.
+    """
+
+    def __init__(self, context={}, status=CR_OK, **kwargs):
+        super(Serialize, self).__init__(context, status=status, **kwargs)
