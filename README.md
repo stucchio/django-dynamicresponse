@@ -6,6 +6,8 @@ The framework is intentionally very lightweight and minimalistic, and is designe
 
 In most cases, the only changes needed to add full REST API to an existing Django application is modifying the return statements in your views to return one of the response classes described below instead of a standard Django `HttpResponse`.
 
+This version is a fork by me (Chris Stucchio, stucchio@gmail.com) which adds additional functionality needed by Styloot (my startup).
+
 ## Features
 
 * Easy integration with existing code
@@ -22,12 +24,12 @@ Install `django-dynamicresponse`:
 Alternatively, download the source code and manually add it to your `PYTHONPATH`.
 
 Add the two middleware classes to `MIDDLEWARE_CLASSES` in your `settings.py`:
- 
+
 	MIDDLEWARE_CLASSES = (
 	   'dynamicresponse.middleware.api.APIMiddleware',
 	   'dynamicresponse.middleware.dynamicformat.DynamicFormatMiddleware',
 	)
-	
+
 `APIMiddleware` detects incoming API requests based on HTTP headers and provides support for Basic authentication.
 
 `DynamicFormatMiddleware` decodes incoming JSON content into `request.POST`, as well as rendering appropriate responses based on the returned value from your views.
@@ -47,7 +49,7 @@ Return an instance of the appropriate response class depending on your view logi
     @login_required
     def customer_list(request):
         """Lists all customers."""
-    
+
         customers = Customer.objects.all()
         return SerializeOrRender('customers/list.html', { 'customers': customers })
 
@@ -62,11 +64,26 @@ For API requests, the second argument of the constructor is the context to be se
     @login_required
     def customer_list(request):
         """Lists all customers."""
-    
+
         customers = Customer.objects.all()
         return SerializeOrRender('customers/list.html', { 'customers': customers }, extra={ 'somevalue': 'something' })
 
 In this case, only `customers` are serialized in API responses, while both `customers` and `somevalue` is accessible when the template is rendered for normal requests.
+
+### Generic Views
+(Added by C.S. Not part of regular dynamicresponse.)
+
+Dynamicresponse also has generic views which are useful when creating a JSON API. The basic idea is that many API calls are merely simple queries to the database which return serialized objects.
+
+To view a single object, one can use the SerializeDetailView. This is analogous to django.views.generic.DetailView. To view a list of objects one would use SerializeListView, which is analogous to django.views.generic.ListView.
+
+    from dynamicresponse.genericviews import SerializeDetailView, SerializeListView
+
+    urlpatterns = patterns('',
+        url(r'customer/$', SerializeListView.as_view(model=Customer), name="api_customers),
+        url(r'^customer/(?P<slug>.*)', SerializeDetailView.as_view(slug_field=id', model=Customer), {}, 'api_customer),
+	...
+	)
 
 ### Status codes
 
@@ -122,7 +139,7 @@ You can override this behavior by adding a <code>serialize_fields</code> method 
 
 	    def serialize_fields(self):
 	        """Only these fields will be included in API responses."""
-        
+
 	        return [
 	            'id',
 	            'title',
