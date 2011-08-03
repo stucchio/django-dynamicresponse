@@ -2,73 +2,71 @@ from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponse, HttpResponseRedirect
 
+def detect_api_request(request, api_accept_types = [ 'application/json', ]):
+    """
+    Detects API request based on the HTTP Accept header.
+    If so, sets is_api on the request.
+    """
+    accepts = []
+    if 'HTTP_ACCEPT' in request.META:
+        accepts = [a.split(';')[0] for a in request.META['HTTP_ACCEPT'].split(',')]
+
+    for accept_type in accepts:
+        if accept_type in api_accept_types:
+            return True
+    return False
+
 class APIMiddleware:
     """
     Detects API requests and provides support for Basic authentication.
     """
-    
+
     api_accept_types = [
         'application/json',
     ]
-    
+
     def process_request(self, request):
-        
-        # Check if request is API
-        self._detect_api_request(request)
-        
+        # Check if request is API, and set request.is_api to true
+        request.is_api = detect_api_request(request, self.api_accept_types)
+
         # Should we authenticate based on headers?
         if self._should_authorize(request):
             if not self._perform_basic_auth(request):
                 return self._require_authentication(request)
-        
+
     def process_response(self, request, response):
-        
+
         if not getattr(request, 'is_api', False):
             return response
-            
+
         # Convert redirect from login_required to HTTP 401
         if isinstance(response, HttpResponseRedirect):
             redirect_url = response.get('Location', '')
             if redirect_url.startswith(settings.LOGIN_URL):
                 return self._require_authentication(request)
-        
-        return response
-        
-    def _detect_api_request(self, request):
-        """
-        Detects API request based on the HTTP Accept header.
-        If so, sets is_api on the request.
-        """
-        
-        request.is_api = False
-        request.accepts = []
-        if 'HTTP_ACCEPT' in request.META:
-            request.accepts = [a.split(';')[0] for a in request.META['HTTP_ACCEPT'].split(',')]
 
-        for accept_type in request.accepts:
-            if accept_type in self.api_accept_types:
-                request.is_api = True
-    
+        return response
+
     def _get_auth_string(self, request):
         """
         Returns the authorization string set in the request header.
         """
 
         return request.META.get('Authorization', None) or request.META.get('HTTP_AUTHORIZATION', None)
-    
+
     def _should_authorize(self, request):
         """
         Returns true if the request is an unauthenticated API request,
         already containing HTTP authorization headers.
         """
-        
+
         if (not request.is_api) or (request.user.is_authenticated()):
             return False
         else:
             return self._get_auth_string(request) != None
 
     def _perform_basic_auth(self, request):
-        """"
+        """
         Logs in user specified with credentials provided by HTTP authentication.
         """
 
@@ -96,8 +94,8 @@ class APIMiddleware:
         """
         Returns a request for authentication.
         """
-        
+
         response = HttpResponse(status=401)
         response['WWW-Authenticate'] = 'Basic realm="%s"' % 'API'
         return response
-        
+
