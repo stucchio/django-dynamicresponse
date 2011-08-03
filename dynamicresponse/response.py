@@ -60,8 +60,7 @@ class SerializeOrRender(DynamicResponse):
         super(SerializeOrRender, self).__init__(context, **kwargs)
         self.template = template
 
-    def render_response(self, request, response):
-
+    def render_response(self, request):
         if request.is_api:
             res = self.serialize()
         else:
@@ -84,7 +83,7 @@ class SerializeOrRedirect(DynamicResponse):
         super(SerializeOrRedirect, self).__init__(context, **kwargs)
         self.url = url
 
-    def render_response(self, request, response):
+    def render_response(self, request):
 
         if request.is_api:
             res = self.serialize()
@@ -107,7 +106,7 @@ class Serialize(DynamicResponse):
 
         super(Serialize, self).__init__(context, **kwargs)
 
-    def render_response(self, request, response):
+    def render_response(self, request):
 
         res = self.serialize()
 
