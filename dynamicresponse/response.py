@@ -122,8 +122,8 @@ class Serialize(DynamicResponse):
 
         return res
 
-def serialize(request, context={}, status=CR_OK, **kwargs):
-    return Serialize(context, status, **kwargs).render_response(request)
+def serialize(request, context={}, **kwargs):
+    return Serialize(context, **kwargs).render_response(request)
 
 class SerializeObject(Serialize):
     """
