@@ -72,6 +72,9 @@ class SerializeOrRender(DynamicResponse):
 
         return res
 
+def serialize_or_render(request, template, context={}, **kwargs):
+    return SerializeOrRender(template, context, **kwargs).render_response(request)
+
 class SerializeOrRedirect(DynamicResponse):
     """
     For normal requests, the user is redirected to the specified location.
@@ -96,6 +99,9 @@ class SerializeOrRedirect(DynamicResponse):
 
         return res
 
+def serialize_or_redirect(request, url, context={}, **kwargs):
+    return SerializeOrRedirect(url, context, **kwargs).render_response(request)
+
 class Serialize(DynamicResponse):
     """
     Serializes the context as JSON for both API and normal requests.
@@ -116,6 +122,9 @@ class Serialize(DynamicResponse):
 
         return res
 
+def serialize(request, context={}, status=CR_OK, **kwargs):
+    return Serialize(context, status, **kwargs).render_response(request)
+
 class SerializeObject(Serialize):
     """
     Serializes a single object as JSON for both API and normal requests.
@@ -123,3 +132,6 @@ class SerializeObject(Serialize):
 
     def __init__(self, context={}, status=CR_OK, **kwargs):
         super(Serialize, self).__init__(context, status=status, **kwargs)
+
+def serialize_object(request, context={}, status=CR_OK, **kwargs):
+    return SerializeObject(context, status, **kwargs).render_response(request)
