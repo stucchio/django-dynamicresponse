@@ -70,6 +70,19 @@ For API requests, the second argument of the constructor is the context to be se
 
 In this case, only `customers` are serialized in API responses, while both `customers` and `somevalue` is accessible when the template is rendered for normal requests.
 
+### Skipping the middleware
+
+Under some circumstances, it is desirable not to use the dynamicresponse middleware. For example, the function cache_view is unable to properly handle DynamicResponse objects.
+
+In that case, there are helper functions which can be used:
+
+    @login_required
+    def customer_list(request):
+        """Lists all customers."""
+
+        customers = Customer.objects.all()
+        return serialize_or_render(request, 'customers/list.html', { 'customers': customers }, extra={ 'somevalue': 'something' })
+
 ### Generic Views
 (Added by C.S. Not part of regular dynamicresponse.)
 
